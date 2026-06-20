@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+
+HOSTS_FILE="$HOME/etc/.sshtui/servers.conf"
+
+mkdir -p "$(dirname "$HOSTS_FILE")"
+if [ ! -f "$HOSTS_FILE" ]; then
+  touch "$HOSTS_FILE"
+fi
+
+FZF_COLORS="bg:#010409,bg+:#264f78,fg:#e6edf3,fg+:#e6edf3,hl:#58a6ff,hl+:#79c0ff,info:#39c5cf,prompt:#56d364,pointer:#ff7b72,marker:#bc8cff,header:#d29922,border:#484f58"
+
+get_servers() {
+  grep -v -e '^[[:space:]]*#' -e '^[[:space:]]*$' "$HOSTS_FILE"
+}
+
+while true; do
+  SELECTED_LINE=$( (get_servers; echo "[*] Settings") | fzf \
+    --prompt="Select Server: " \
+    --layout=reverse \
+    --border \
+    --style full \
+    --color="$FZF_COLORS" \
+    --header="sshTUI - TUI Wrapper for ssh | [ESC] Exit [TYPE] Search [ENTER] Connect")
+
+  if [ -z "$SELECTED_LINE" ]; then
+    clear
+    echo "Exited/Canceled."
+    break
+  fi
+
+  if [[ "$SELECTED_LINE" == "[*]"* ]]; then
+    while true; do
+      clear
+      SETTING_CHOICE=$(echo -e "[+] Add New Server\n[-] Remove Server\n[<] Back to Main Menu" | fzf \
+        --prompt="Settings: " \
+        --layout=reverse \
+        --border \
+        --style full \
+        --color="$FZF_COLORS" \
+        --header="Manage your server list")
+
+      if [ -z "$SETTING_CHOICE" ] || [[ "$SETTING_CHOICE" == "[<]"* ]]; then
+        clear
+        break
+      fi
+
+      if [[ "$SETTING_CHOICE" == "[+]"* ]]; then
+        clear
+        echo "=== Adding New Server ==="
+        read -p "Enter alias/name (e.g., vps-prod): " name
+        read -p "Enter SSH address (e.g., user@ip): " addr
+        
+        if [ -n "$name" ] && [ -n "$addr" ]; then
+          printf "%-13s %s\n" "$name" "$addr" >> "$HOSTS_FILE"
+          echo "Server added successfully!"
+        else
+          echo "Cancelled: Name or Address cannot be empty."
+        fi
+        sleep 1.5
+
+      elif [[ "$SETTING_CHOICE" == "[-]"* ]]; then
+        clear
+        SERVER_TO_REMOVE=$(get_servers | fzf \
+          --prompt="Select Server to REMOVE: " \
+          --layout=reverse \
+          --border \
+          --style full \
+          --color="$FZF_COLORS" \
+          --header="WARNING: Press ENTER to delete, ESC to cancel")
+
+        if [ -n "$SERVER_TO_REMOVE" ]; then
+          spin='-\|/'
+          for i in {1..10}; do
+            printf "\r[%c] Removing server from the list..." "${spin:i%4:1}"
+            sleep 0.1
+          done
+          printf "\r\033[K"
+
+          sed -i "\|$SERVER_TO_REMOVE|d" "$HOSTS_FILE"
+          echo "Server removed successfully!"
+          sleep 1.5
+        else
+          echo "Cancelled: No server was removed."
+          sleep 1
+        fi
+      fi
+    done
+    continue
+
+  else
+    SELECT_HOST=$(echo "$SELECTED_LINE" | awk '{print $2}')
+
+    clear
+    echo "Connecting with: $SELECT_HOST..."
+
+    spin='-\|/'
+    for i in {1..15}; do
+      printf "\r[%c] Initializing connection..." "${spin:i%4:1}"
+      sleep 0.1
+    done
+    
+    printf "\r\033[K" 
+    ssh "$SELECT_HOST"
+    break
+  fi
+done
