@@ -5,32 +5,35 @@ GREEN=$(echo -e '\033[0;32m')
 PURPLE=$(echo -e '\033[0;35m')
 NC=$(echo -e '\033[0m')
 
-echo -e "${PURPLE}sshTUI installer:"
+echo -e "${PURPLE}sshTUI installer:${NC}"
 read -r -p "Would you like to install the sshTUI? [y/N] " response
 
 case "$response" in
-    [yY][eE][sS]|[yY][tT]
+[yY][eE][sS] | [yY])
+  echo ""
+  echo "-----------------Downloading------------------"
+  echo ""
 
-        echo ""
-        echo "-----------------Downloading------------------"
-        echo ""
+  curl -s -o sshtui https://raw.githubusercontent.com/grzesiowski1223/sshtui/main/install_sshtui.sh
 
-    curl -s -o sshtui https://raw.githubusercontent.com/grzesiowski1223/sshtui/main/install_sshtui.sh
+  if [[ ! -f sshtui ]]; then
+    echo -e "${RED}Download failed. Please check the URL or your internet connection.${NC}"
+    exit 1
+  fi
 
-        if [[ ! -f sshtui ]]; then
-            echo -e "${RED}Download failed. Please check the URL or your internet connection.${NC}"
-            exit 1
-        fi
+  # Zmienione z oss na sshtui, żeby sed nie wywalił błędu "no such file or directory"
+  if [[ -n "$ip" ]]; then
+    sed -i "s|^IPADDRESS=.*$|IPADDRESS=\"$ip\"|" sshtui
+  fi
 
-        sed -i "s|^IPADDRESS=.*$|IPADDRESS=\"$ip\"|" oss
-        chmod +x sshtui
-        sudo cp sshtui /usr/local/bin/
+  chmod +x sshtui
+  sudo cp sshtui /usr/local/bin/
 
-        echo -e "${GREEN}The installation is successful.${NC}"
-        echo "You can now run 'sshtui' as a command!"
-        ;;
-    *)
-        echo "Exiting..."
-        exit
-        ;;
+  echo -e "${GREEN}The installation is successful.${NC}"
+  echo "You can now run 'sshtui' as a command!"
+  ;;
+*)
+  echo "Exiting..."
+  exit
+  ;;
 esac
