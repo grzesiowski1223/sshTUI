@@ -1,6 +1,11 @@
 #!/bin/env bash
 
-echo "sshTUI installer:"
+RED=$(echo -e '\033[31m')
+GREEN=$(echo -e '\033[0;32m')
+PURPLE=$(echo -e '\033[0;35m')
+NC=$(echo -e '\033[0m')
+
+echo -e "${PURPLE}sshTUI installer:"
 read -r -p "Would you like to install the sshTUI? [y/N] " response
 
 case "$response" in
