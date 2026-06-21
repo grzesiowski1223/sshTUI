@@ -12,3 +12,5 @@ This project depends on fzf (fuzzy finder)
 
 ##### Arch Linux (and all the deriviatives)
 ```sudo pacman -S fzf```
+#### Android
+```pkg install fzf```
